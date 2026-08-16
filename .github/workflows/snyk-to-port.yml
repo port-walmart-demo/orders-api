@@ -1,0 +1,41 @@
+name: Snyk to Port
+
+# Closes the Snyk -> Port loop that hosted Ocean Issues API cannot
+# (403 on free/team). CLI works with a personal Snyk token.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  snyk-to-port:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies (so Snyk has a lockfile/tree)
+        run: npm install --package-lock-only || npm install
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk Open Source test
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: snyk test --json-file-output=snyk.json || true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Upsert findings to Port (vulnerability blueprint)
+        env:
+          PORT_CLIENT_ID: ${{ secrets.PORT_CLIENT_ID }}
+          PORT_CLIENT_SECRET: ${{ secrets.PORT_CLIENT_SECRET }}
+          PORT_API_BASE_URL: https://api.getport.io
+          PORT_SERVICE_ID: orders_api
+        run: python3 scripts/snyk_to_port.py snyk.json

@@ -1,0 +1,8 @@
+{
+  "name": "orders-api",
+  "private": true,
+  "description": "Golden-path service. lodash is pinned old on purpose so Snyk reports findings we can publish to Port.",
+  "dependencies": {
+    "lodash": "4.17.20"
+  }
+}
